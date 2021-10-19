@@ -1,4 +1,4 @@
-﻿ID,species,sex,body_mass,claw_mass_before_papain,claw_mass_after_papain,muscle_mass,inert_mass,proportion_muscle,proportion_inert,proportion_weapon,total_mass,species_sex,log_total_mass,log_claw_mass,log10_inert_mass,log10_muscle_mass,percent_change,
+﻿ID,species,sex,body_mass,claw_mass_before_papain,claw_mass_after_papain,muscle_mass,inert_mass,proportion_muscle,proportion_inert,proportion_weapon,total_mass,species_sex,log10_total_mass,log10_claw_mass,log10_inert_mass,log10_muscle_mass,percent_change,
 AHF-1001,Alpheus heterochaelis,f,0.115832,0.040078,0.027018,0.01306,0.027018,0.325864564,0.233251606,0.257058559,0.15591,AHF,-0.807126028,-1.397093959,-1.568346803,-1.884056823,-65.3998895,
 AHF-1002,Alpheus heterochaelis,f,0.186705,0.056419,0.037007,0.019412,0.037007,0.344068488,0.198211082,0.232058538,0.243124,AHF,-0.614172168,-1.248574616,-1.43171612,-1.711929717,-69.78174125,
 AHF-1003,Alpheus heterochaelis,f,0.243181,0.07689,0.0557234,0.0211666,0.0557234,0.275284172,0.229143724,0.240227949,0.320071,AHF,-0.494753673,-1.114130139,-1.253962393,-1.674348897,-68.38157586,
