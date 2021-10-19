@@ -1,0 +1,406 @@
+---
+title: "Crustacean Cost-Minimization"
+author: "Jason P. Dinh"
+output: html_notebook
+---
+
+#Load the packages and set color codes for figures. 
+```{r}
+library(tidyverse)
+library(readxl)
+library(ggthemes)
+library(cowplot)
+library(ggpubr)
+library(ggiraph)
+library(ggiraphExtra)
+library(MuMIn)
+library(httr)
+blue_code <- "#0073C2FF"
+yellow_code <- "#EFC000FF"
+```
+
+#Download the data from Github.
+```{r}
+muscle_mass_data <- read.csv("https://raw.githubusercontent.com/jasonpdinh/crustacean_cost_minimization/main/Weapon_MuscleMass.csv")
+```
+
+#Filter data by species and sex. 
+```{r}
+UPM <- filter(muscle_mass_data, species_sex == "UPM")
+AEF <- filter(muscle_mass_data, species_sex == "AEF")
+AEM <- filter(muscle_mass_data, species_sex == "AEM")
+AHF <- filter(muscle_mass_data, species_sex == "AHF")
+AHM <- filter(muscle_mass_data, species_sex == "AHM")
+```
+
+#Filter data by species and sex. Build log-log scaling relationships and calculate residuals. 
+```{r}
+UPM_model <- lm(data = UPM, log10_claw_mass ~ log10_total_mass)
+AEF_model <- lm(data = AEF, log10_claw_mass ~ log10_total_mass)
+AEM_model <- lm(data = AEM, log10_claw_mass ~ log10_total_mass)
+AHF_model <- lm(data = AHF, log10_claw_mass ~ log10_total_mass)
+AHM_model <- lm(data = AHM, log10_claw_mass ~ log10_total_mass)
+
+UPM$weapon_residual <- resid(UPM_model)
+AEF$weapon_residual <- resid(AEF_model)
+AEM$weapon_residual <- resid(AEM_model)
+AHF$weapon_residual <- resid(AHF_model)
+AHM$weapon_residual <- resid(AHM_model)
+```
+
+#Build models for Figure 2. This predicts proportion soft tissue as a function of claw mass and weapon residuals. 
+```{r}
+UPM_proportion_model <- lm(data = UPM, proportion_muscle ~ log10_claw_mass + weapon_residual, na.action = "na.fail")
+summary(UPM_proportion_model)
+
+AEF_proportion_model <- lm(data = AEF, proportion_muscle ~ log10_claw_mass + weapon_residual, na.action = "na.fail")
+summary(AEF_proportion_model)
+
+AEM_proportion_model <- lm(data = AEM, proportion_muscle ~ log10_claw_mass + weapon_residual, na.action = "na.fail")
+summary(AEM_proportion_model)
+
+AHF_proportion_model <- lm(data = AHF, proportion_muscle ~ log10_claw_mass + weapon_residual, na.action = "na.fail")
+summary(AHF_proportion_model)
+
+AHM_proportion_model <- lm(data = AHM, proportion_muscle ~ log10_claw_mass + weapon_residual, na.action = "na.fail")
+summary(AHM_proportion_model)
+```
+
+#Calculate AICc for Figure 2 models. 
+```{r}
+dredge(UPM_proportion_model) #full model deltaAIC = 0.83
+dredge(AEF_proportion_model) #full model deltaAIC = 2.99
+dredge(AEM_proportion_model) #full model deltaAIC = 0
+dredge(AHF_proportion_model) #full model deltaAIC = 1.82
+dredge(AHM_proportion_model) #full model deltaAIC = 0
+```
+
+#Build Figure 2. 
+```{r}
+AHM_regression <- ggPredict(AHM_proportion_model, se = FALSE, interactive = FALSE) + 
+  theme_few() + 
+  labs(x = "log10(Claw Mass)", 
+       y = "Proportion Soft Tissue", 
+       col = "Weapon Residual", 
+       fill = "Weapon Residual", 
+       title = expression(paste(italic("Alpheus heterochaelis"), " male")), 
+       subtitle = expression(paste(Delta, "AIC = 0"))) + 
+  scale_y_continuous(limits = c(0.1, 0.7)) + 
+  scale_x_continuous(limits = c(-2.7, -0.3)) + 
+  scale_color_gradient(low = blue_code, high = yellow_code) + 
+  scale_fill_gradient(low = blue_code, high = yellow_code) + 
+  theme(legend.position = 'none')
+
+AEM_regression <- ggPredict(AEM_proportion_model, se = FALSE, interactive = FALSE) + 
+  theme_few() + 
+  labs(x = "log10(Claw Mass)", 
+       y = "Proportion Soft Tissue", 
+       col = "Weapon Residual", 
+       fill = "Weapon Residual", 
+       title = expression(paste(italic("Alpheus estuariensis"), " male")), 
+       subtitle = expression(paste(Delta, "AIC = 0"))) + 
+  scale_y_continuous(limits = c(0.1, 0.7)) + 
+  scale_x_continuous(limits = c(-2.7, -0.3)) + 
+  scale_color_gradient(low = blue_code, high = yellow_code) + 
+  scale_fill_gradient(low = blue_code, high = yellow_code)
+
+UPM_regression <- ggPredict(UPM_proportion_model, se = FALSE, interactive = FALSE) + 
+  theme_few() + 
+  labs(x = "log10(Claw Mass)", 
+       y = "Proportion Soft Tissue", 
+       col = "Weapon Residual", 
+       fill = "Weapon Residual", 
+       title = expression(paste(italic("Uca pugilator"), " male")), 
+       subtitle = expression(paste(Delta, "AIC = 0.83"))) + 
+  scale_y_continuous(limits = c(0.1, 0.7)) + 
+  scale_x_continuous(limits = c(-2.7, -0.3)) + 
+  scale_color_gradient(low = blue_code, high = yellow_code) + 
+  scale_fill_gradient(low = blue_code, high = yellow_code)
+
+AHF_regression <- ggPredict(AHF_proportion_model, se = FALSE, interactive = FALSE) + 
+  theme_few() + 
+  labs(x = "log10(Claw Mass)", 
+       y = "Proportion Soft Tissue", 
+       col = "Weapon Residual", 
+       fill = "Weapon Residual", 
+       title = expression(paste(italic("Alpheus heterochaelis"), " female")), 
+       subtitle = expression(paste(Delta, "AIC = 1.82"))) + 
+  scale_y_continuous(limits = c(0.1, 0.7)) + 
+  scale_x_continuous(limits = c(-2.7, -0.3)) + 
+  scale_color_gradient(low = blue_code, high = yellow_code) + 
+  scale_fill_gradient(low = blue_code, high = yellow_code)
+
+AEF_regression <- ggPredict(AEF_proportion_model, se = FALSE, interactive = FALSE) + 
+  theme_few() + 
+  labs(x = "log10(Claw Mass)", 
+       y = "Proportion Soft Tissue", 
+       col = "Weapon Residual", 
+       fill = "Weapon Residual", 
+       title = expression(paste(italic("Alpheus estuariensis"), " female")), 
+       subtitle = expression(paste(Delta, "AIC = 2.99"))) + 
+  scale_y_continuous(limits = c(0.1, 0.7)) + 
+  scale_x_continuous(limits = c(-2.7, -0.3)) + 
+  scale_color_gradient(low = blue_code, high = yellow_code) + 
+  scale_fill_gradient(low = blue_code, high = yellow_code)
+```
+
+#Put Figure 2 fgigures on a grid. 
+```{r}
+plot_grid(AHM_regression, AEM_regression, UPM_regression, AHF_regression, AEF_regression, 
+          labels = c("a)", "b)", "c)", "d)", "e)"))
+```
+
+#Build scaling relatinoships for total claw mass, muscle mass, and inert mass (Figure 1)
+```{r}
+summary(lm(log10_claw_mass ~ log10_total_mass, AHM))
+summary(lm(log10_muscle_mass ~ log10_total_mass, AHM))
+summary(lm(log10_inert_mass ~ log10_total_mass, AHM))
+
+AHM_scaling <- ggplot(data = AHM)  + 
+  geom_point(aes(x = log10_total_mass, 
+                 y = log10_claw_mass), 
+             col = "gray", 
+             alpha = 0.75, size = 2.5) + 
+  geom_smooth(aes(x = log10_total_mass, 
+                 y = log10_claw_mass), 
+              method = "lm", 
+              col = "gray") + 
+  geom_point(aes(x = log10_total_mass, 
+                 y = log10_muscle_mass), 
+             col = yellow_code, 
+             alpha = 0.75, size = 2.5) + 
+  geom_smooth(aes(x = log10_total_mass, 
+                 y = log10_muscle_mass), 
+              method = "lm", 
+              col = yellow_code) + 
+  geom_point(aes(x = log10_total_mass, 
+                 y = log10_inert_mass), 
+             col = blue_code, 
+             alpha = 0.75, size = 2.5) + 
+  geom_smooth(aes(x = log10_total_mass, 
+                 y = log10_inert_mass), 
+              method = "lm", 
+              col = blue_code) + 
+  theme_few() + 
+  labs(x = "log10(Body Mass (g))", 
+       y = "log10(Mass (g))", 
+       title = expression(paste(italic("Alpheus heterochaelis"), " males")))  + 
+  scale_y_continuous(limits = c(-3, 0)) + 
+  scale_x_continuous(limits = c(-1.8, 0))
+
+summary(lm(log10_claw_mass ~ log10_total_mass, AEM))
+summary(lm(log10_muscle_mass ~ log10_total_mass, AEM))
+summary(lm(log10_inert_mass ~ log10_total_mass, AEM))
+
+AEM_scaling <- ggplot(data = AEM)  + 
+  geom_point(aes(x = log10_total_mass, 
+                 y = log10_claw_mass), 
+             col = "gray", 
+             alpha = 0.75, size = 2.5) + 
+  geom_smooth(aes(x = log10_total_mass, 
+                 y = log10_claw_mass), 
+              method = "lm", 
+              col = "gray") + 
+  geom_point(aes(x = log10_total_mass, 
+                 y = log10_muscle_mass), 
+             col = yellow_code, 
+             alpha = 0.75, size = 2.5) + 
+  geom_smooth(aes(x = log10_total_mass, 
+                 y = log10_muscle_mass), 
+              method = "lm", 
+              col = yellow_code) + 
+  geom_point(aes(x = log10_total_mass, 
+                 y = log10_inert_mass), 
+             col = blue_code, 
+             alpha = 0.75, size = 2.5) + 
+  geom_smooth(aes(x = log10_total_mass, 
+                 y = log10_inert_mass), 
+              method = "lm", 
+              col = blue_code) +  
+  theme_few() + 
+  labs(x = "log10(Body Mass (g))", 
+       y = "log10(Claw Mass (g))", 
+       title = expression(paste(italic("Alpheus estuariensis"), " males")))  + 
+  scale_y_continuous(limits = c(-3, 0)) + 
+  scale_x_continuous(limits = c(-1.8, 0))
+
+summary(lm(log10_claw_mass ~ log10_total_mass, UPM))
+summary(lm(log10_muscle_mass ~ log10_total_mass, UPM))
+summary(lm(log10_inert_mass ~ log10_total_mass, UPM))
+
+UPM_scaling <- ggplot(data = UPM)  + 
+  geom_point(aes(x = log10_total_mass, 
+                 y = log10_claw_mass), 
+             col = "gray", 
+             alpha = 0.75, size = 2.5) + 
+  geom_smooth(aes(x = log10_total_mass, 
+                 y = log10_claw_mass), 
+              method = "lm", 
+              col = "gray") + 
+  geom_point(aes(x = log10_total_mass, 
+                 y = log10_muscle_mass), 
+             col = yellow_code, 
+             alpha = 0.75, size = 2.5) + 
+  geom_smooth(aes(x = log10_total_mass, 
+                 y = log10_muscle_mass), 
+              method = "lm", 
+              col = yellow_code) + 
+  geom_point(aes(x = log10_total_mass, 
+                 y = log10_inert_mass), 
+             col = blue_code, 
+             alpha = 0.75, size = 2.5) + 
+  geom_smooth(aes(x = log10_total_mass, 
+                 y = log10_inert_mass), 
+              method = "lm", 
+              col = blue_code) + 
+  theme_few() + 
+  labs(x = "log10(Body Mass (g))", 
+       y = "log10(Claw Mass (g))", 
+       title = expression(paste(italic("Uca Pugilator"), " males"))) + 
+  scale_y_continuous(limits = c(-3, 0)) + 
+  scale_x_continuous(limits = c(-1.8, 0))
+
+summary(lm(log10_claw_mass ~ log10_total_mass, AHF))
+summary(lm(log10_muscle_mass ~ log10_total_mass, AHF))
+summary(lm(log10_inert_mass ~ log10_total_mass, AHF))
+
+AHF_scaling <- ggplot(data = AHF)   + 
+  geom_point(aes(x = log10_total_mass, 
+                 y = log10_claw_mass), 
+             col = "gray", 
+             alpha = 0.75, size = 2.5) + 
+  geom_smooth(aes(x = log10_total_mass, 
+                 y = log10_claw_mass), 
+              method = "lm", 
+              col = "gray") + 
+  geom_point(aes(x = log10_total_mass, 
+                 y = log10_muscle_mass), 
+             col = yellow_code, 
+             alpha = 0.75, size = 2.5) + 
+  geom_smooth(aes(x = log10_total_mass, 
+                 y = log10_muscle_mass), 
+              method = "lm", 
+              col = yellow_code) + 
+  geom_point(aes(x = log10_total_mass, 
+                 y = log10_inert_mass), 
+             col = blue_code, 
+             alpha = 0.75, size = 2.5) + 
+  geom_smooth(aes(x = log10_total_mass, 
+                 y = log10_inert_mass), 
+              method = "lm", 
+              col = blue_code) + 
+  theme_few() + 
+  labs(x = "log10(Body Mass (g))", 
+       y = "log10(Claw Mass (g))", 
+       title = expression(paste(italic("Alpheus heterochaelis"), " females")))  + 
+  scale_y_continuous(limits = c(-3, 0)) + 
+  scale_x_continuous(limits = c(-1.8, 0))
+
+summary(lm(log10_claw_mass ~ log10_total_mass, AEF))
+summary(lm(log10_muscle_mass ~ log10_total_mass, AEF))
+summary(lm(log10_inert_mass ~ log10_total_mass, AEF))
+
+AEF_scaling <- ggplot(data = AEF)  + 
+  geom_point(aes(x = log10_total_mass, 
+                 y = log10_claw_mass), 
+             col = "gray", 
+             alpha = 0.75, size = 2.5) + 
+  geom_smooth(aes(x = log10_total_mass, 
+                 y = log10_claw_mass), 
+              method = "lm", 
+              col = "gray") + 
+  geom_point(aes(x = log10_total_mass, 
+                 y = log10_muscle_mass), 
+             col = yellow_code, 
+             alpha = 0.75, size = 2.5) + 
+  geom_smooth(aes(x = log10_total_mass, 
+                 y = log10_muscle_mass), 
+              method = "lm", 
+              col = yellow_code) + 
+  geom_point(aes(x = log10_total_mass, 
+                 y = log10_inert_mass), 
+             col = blue_code, 
+             alpha = 0.75, size = 2.5) + 
+  geom_smooth(aes(x = log10_total_mass, 
+                 y = log10_inert_mass), 
+              method = "lm", 
+              col = blue_code) + 
+  theme_few() + 
+  labs(x = "log10(Body Mass (g))", 
+       y = "log10(Claw Mass (g))", 
+       title = expression(paste(italic("Alpheus estuariensis"), " females"))) + 
+  scale_y_continuous(limits = c(-3, 0)) + 
+  scale_x_continuous(limits = c(-1.8, 0))
+```
+
+#Stitch together Figure 1
+```{r}
+plot_grid(AHM_scaling, AEM_scaling, UPM_scaling, AHF_scaling, AEF_scaling, 
+          labels = c("a)", "b)", "c)", "d)", "e)"))
+```
+
+#Individual scaling relationships for muscle and inert mass
+```{r}
+summary(lm(log10_muscle_mass ~ log10_total_mass, data = UPM))
+summary(lm(log10(claw_mass_after_papain) ~ log10_total_mass, data = UPM))
+
+summary(lm(log10_muscle_mass ~ log10_total_mass, data = AEM))
+summary(lm(log10(claw_mass_after_papain) ~ log10_total_mass, data = AEM))
+
+summary(lm(log10_muscle_mass ~ log10_total_mass, data = AEF))
+summary(lm(log10(claw_mass_after_papain) ~ log10_total_mass, data = AEF))
+
+summary(lm(log10_muscle_mass ~ log10_total_mass, data = AHM))
+summary(lm(log10(claw_mass_after_papain) ~ log10_total_mass, data = AHM))
+
+summary(lm(log10_muscle_mass ~ log10_total_mass, data = AHF))
+summary(lm(log10(claw_mass_after_papain) ~ log10_total_mass, data = AHF))
+```
+#Get percent change numbers for manuscript. 
+```{r}
+muscle_mass_data %>% 
+  group_by(species_sex) %>% 
+  summarize(max_proportion = max(proportion_muscle), 
+            min_proportion = min(proportion_muscle), 
+            ratio_proportion = max_proportion/min_proportion, 
+            percent_difference = max_proportion - min_proportion / min_proportion)
+```
+#Get all data in tidy format
+```{r}
+log10_body_mass <- dplyr::select(muscle_mass_data, ID, log10_total_mass)
+
+tidy_tissue <- 
+  dplyr::select(muscle_mass_data, ID, claw_mass_before_papain, inert_mass, muscle_mass) %>% 
+  pivot_longer(c("inert_mass", "muscle_mass"), 
+               names_to = "tissue_type", 
+               values_to = "mass") %>%
+  mutate(species_sex = substring(ID, 1, 3), 
+         log10_mass = log10(mass), 
+         muscle = ifelse(tissue_type == "muscle_mass", 1, 0)) %>% 
+  merge(log10_body_mass, by = "ID")
+
+UPM_tidy <- filter(tidy_tissue, species_sex == "UPM")
+AEF_tidy <- filter(tidy_tissue, species_sex == "AEF")
+AEM_tidy <- filter(tidy_tissue, species_sex == "AEM")
+AHF_tidy <- filter(tidy_tissue, species_sex == "AHF")
+AHM_tidy <- filter(tidy_tissue, species_sex == "AHM")
+```
+
+#Test if scaling slopes vary by tissue type.
+```{r}
+summary(lm(log10_mass ~ log10_total_mass*muscle, data = UPM_tidy))
+summary(lm(log10_mass ~ log10_total_mass*muscle, data = AHF_tidy))
+summary(lm(log10_mass ~ log10_total_mass*muscle, data = AHM_tidy))
+summary(lm(log10_mass ~ log10_total_mass*muscle, data = AEF_tidy))
+summary(lm(log10_mass ~ log10_total_mass*muscle, data = AEM_tidy))
+```
+#Get AICc to see if slopes vary by tissue types. 
+```{r}
+dredge(lm(log10_mass ~ log10_total_mass*muscle, data = UPM_tidy, na.action = "na.fail"))
+dredge(lm(log10_mass ~ log10_total_mass*muscle, data = AHF_tidy, na.action = "na.fail"))
+dredge(lm(log10_mass ~ log10_total_mass*muscle, data = AHM_tidy, na.action = "na.fail"))
+dredge(lm(log10_mass ~ log10_total_mass*muscle, data = AEF_tidy, na.action = "na.fail"))
+dredge(lm(log10_mass ~ log10_total_mass*muscle, data = AEM_tidy, na.action = "na.fail"))
+```
+
+
